@@ -34,6 +34,8 @@
 #include "AP_GPS_UBLOX.h"
 #include "GPS_Backend.h"
 
+#include <stdio.h>
+
 extern const AP_HAL::HAL &hal;
 
 // table of user settable parameters
@@ -286,40 +288,47 @@ AP_GPS::detect_instance(uint8_t instance)
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
             _broadcast_gps_type("u-blox", instance, dstate->last_baud);
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance]);
+            printf("AP_GPS_UBLOX on %d\n", instance);
         } 
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_MTK19) &&
                  AP_GPS_MTK19::_detect(dstate->mtk19_detect_state, data)) {
 			_broadcast_gps_type("MTK19", instance, dstate->last_baud);
 			new_gps = new AP_GPS_MTK19(*this, state[instance], _port[instance]);
+			printf("AP_GPS_MTK19 on %d\n", instance);
 		} 
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_MTK) &&
                  AP_GPS_MTK::_detect(dstate->mtk_detect_state, data)) {
 			_broadcast_gps_type("MTK", instance, dstate->last_baud);
 			new_gps = new AP_GPS_MTK(*this, state[instance], _port[instance]);
+			printf("AP_GPS_MTK on %d\n", instance);
 		}
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP::_detect(dstate->sbp_detect_state, data)) {
             _broadcast_gps_type("SBP", instance, dstate->last_baud);
             new_gps = new AP_GPS_SBP(*this, state[instance], _port[instance]);
+            printf("AP_GPS_SBP on %d\n", instance);
         }
 		// save a bit of code space on a 1280
 		else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SIRF) &&
                  AP_GPS_SIRF::_detect(dstate->sirf_detect_state, data)) {
 			_broadcast_gps_type("SIRF", instance, dstate->last_baud);
 			new_gps = new AP_GPS_SIRF(*this, state[instance], _port[instance]);
+			printf("AP_GPS_SIRF on %d\n", instance);
 		}
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_ERB) &&
                  AP_GPS_ERB::_detect(dstate->erb_detect_state, data)) {
             _broadcast_gps_type("ERB", instance, dstate->last_baud);
             new_gps = new AP_GPS_ERB(*this, state[instance], _port[instance]);
+            printf("AP_GPS_ERB on %d\n", instance);
         }
 		else if (now - dstate->detect_started_ms > (ARRAY_SIZE(_baudrates) * GPS_BAUD_TIME_MS)) {
 			// prevent false detection of NMEA mode in
 			// a MTK or UBLOX which has booted in NMEA mode
-			if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_NMEA) &&
+		    if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_NMEA) &&
                 AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
 				_broadcast_gps_type("NMEA", instance, dstate->last_baud);
 				new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
+				printf("AP_GPS_NMEA on %d\n", instance);
 			}
 		}
 	}
