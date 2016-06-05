@@ -238,9 +238,13 @@ bool AP_Camera::update_location(const struct Location &loc)
     if (is_zero(_trigg_dist)) {
         return false;
     }
+
+    //K hack
+    //change return false to true : allow camera to snap at the 1st waypoint
+    //returning false made the drone ignore the first shot, but happens only 1 time.
     if (_last_location.lat == 0 && _last_location.lng == 0) {
         _last_location = loc;
-        return false;
+        return true;
     }
     if (_last_location.lat == loc.lat && _last_location.lng == loc.lng) {
         // we haven't moved - this can happen as update_location() may

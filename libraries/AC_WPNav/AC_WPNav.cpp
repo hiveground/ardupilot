@@ -603,16 +603,18 @@ void AC_WPNav::advance_wp_target_along_track(float dt)
     // check if we've reached the waypoint
     if( !_flags.reached_destination ) {
         if( _track_desired >= _track_length ) {
+            
+            //K hack temporary remove fast_waypoint to prevent early initialization of the camera snap
             // "fast" waypoints are complete once the intermediate point reaches the destination
-            if (_flags.fast_waypoint) {
+            /*if (_flags.fast_waypoint) {
                 _flags.reached_destination = true;
-            }else{
+            }else{*/
                 // regular waypoints also require the copter to be within the waypoint radius
                 Vector3f dist_to_dest = curr_pos - _destination;
                 if( dist_to_dest.length() <= _wp_radius_cm ) {
                     _flags.reached_destination = true;
                 }
-            }
+            //}
         }
     }
 }
