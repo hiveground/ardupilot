@@ -84,8 +84,8 @@ void AC_Circle::init()
     const Vector3f& stopping_point = _pos_control.get_pos_target();
 
     // set circle center to circle_radius ahead of stopping point
-    _center.x = stopping_point.x + _radius * _ahrs.cos_yaw();
-    _center.y = stopping_point.y + _radius * _ahrs.sin_yaw();
+    _center.x = stopping_point.x + (_radius) * _ahrs.cos_yaw();
+    _center.y = stopping_point.y + (_radius) * _ahrs.sin_yaw();
     _center.z = stopping_point.z;
 
     // calculate velocities
@@ -138,15 +138,20 @@ void AC_Circle::update()
         if (!is_zero(_radius)) {
             // calculate target position
             Vector3f target;
-            target.x = _center.x + _radius * cosf(-_angle);
-            target.y = _center.y - _radius * sinf(-_angle);
+            target.x = _center.x + (_radius/*K-hack : inserted constant ratio for major-minor axis >>*/*1.3f) * cosf(-_angle);
+            target.y = _center.y - (_radius/*K-hack : inserted constant ratio for major-minor axis >>*/*0.7f) * sinf(-_angle);
             target.z = _pos_control.get_alt_target();
 
             // update position controller target
             _pos_control.set_xy_target(target.x, target.y);
 
             // heading is 180 deg from vehicles target position around circle
-            _yaw = wrap_PI(_angle-PI) * AC_CIRCLE_DEGX100;
+            //_yaw = wrap_PI(_angle-PI) * AC_CIRCLE_DEGX100;
+            
+            //K-hack, center-heading using trigonometric approach.
+            const Vector3f &curr_pos = _inav.get_position();
+            _yaw = (-atan2(curr_pos.x-_center.x,curr_pos.y-_center.y)-(PI/2)) * AC_CIRCLE_DEGX100;
+
         }else{
             // set target position to center
             Vector3f target;
@@ -190,15 +195,15 @@ void AC_Circle::get_closest_point_on_circle(Vector3f &result)
 
     // if current location is exactly at the center of the circle return edge directly behind vehicle
     if (is_zero(dist)) {
-        result.x = _center.x - _radius * _ahrs.cos_yaw();
-        result.y = _center.y - _radius * _ahrs.sin_yaw();
+        result.x = _center.x - (_radius/*K-hack : inserted constant ratio for major-minor axis >>*/*1.3f) * _ahrs.cos_yaw();
+        result.y = _center.y - (_radius/*K-hack : inserted constant ratio for major-minor axis >>*/*0.7f) * _ahrs.sin_yaw();
         result.z = _center.z;
         return;
     }
 
     // calculate closest point on edge of circle
-    result.x = _center.x + vec.x / dist * _radius;
-    result.y = _center.y + vec.y / dist * _radius;
+    result.x = _center.x + vec.x / dist * (_radius);
+    result.y = _center.y + vec.y / dist * (_radius);
     result.z = _center.z;
 }
 
@@ -219,7 +224,7 @@ void AC_Circle::calc_velocities(bool init_velocity)
         _angular_vel_max = velocity_max/_radius;
         _angular_vel_max = constrain_float(ToRad(_rate),-_angular_vel_max,_angular_vel_max);
 
-        // angular_velocity in radians per second
+        // angular_acceleration in radians per second square
         _angular_accel = max(_pos_control.get_accel_xy()/_radius, ToRad(AC_CIRCLE_ANGULAR_ACCEL_MIN));
     }
 
