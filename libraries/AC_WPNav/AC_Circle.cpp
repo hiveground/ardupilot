@@ -134,12 +134,20 @@ void AC_Circle::update()
         _angle = wrap_PI(_angle);
         _angle_total += angle_change;
 
+        //K-hack
+        // rotating angle for flight path
+        // ** need to be made into RC_input + create if/case to prevents dumb path 
+        float dir_angle = (PI/4);
+
         // if the circle_radius is zero we are doing panorama so no need to update loiter target
         if (!is_zero(_radius)) {
             // calculate target position
             Vector3f target;
-            target.x = _center.x + (_radius/*K-hack : inserted constant ratio for major-minor axis >>*/*1.3f) * cosf(-_angle);
-            target.y = _center.y - (_radius/*K-hack : inserted constant ratio for major-minor axis >>*/*0.7f) * sinf(-_angle);
+            //K-hack 
+            // insert major-minor ratio and parametric formula for path rotation
+            // ** may need to change ratio ++ rotating by PI/2 or 90 degree seems to have the rotation off by a bit.
+            target.x = _center.x + ((_radius*1.3f) * cosf(-_angle)*cosf(dir_angle)) + ((_radius*0.7f)*sinf(-_angle)*sinf(dir_angle)) ;
+            target.y = _center.y - ((_radius*0.7f) * sinf(-_angle)*cosf(dir_angle)) + ((_radius*1.3f)*cosf(-_angle)*sinf(dir_angle)) ;
             target.z = _pos_control.get_alt_target();
 
             // update position controller target
@@ -150,8 +158,8 @@ void AC_Circle::update()
             
             //K-hack, center-heading using trigonometric approach.
             const Vector3f &curr_pos = _inav.get_position();
-            _yaw = (-atan2(curr_pos.x-_center.x,curr_pos.y-_center.y)-(PI/2)) * AC_CIRCLE_DEGX100;
-
+            _yaw = (atan2f(curr_pos.y-_center.y,curr_pos.x-_center.x)-PI) * AC_CIRCLE_DEGX100;
+ 
         }else{
             // set target position to center
             Vector3f target;
@@ -195,8 +203,11 @@ void AC_Circle::get_closest_point_on_circle(Vector3f &result)
 
     // if current location is exactly at the center of the circle return edge directly behind vehicle
     if (is_zero(dist)) {
-        result.x = _center.x - (_radius/*K-hack : inserted constant ratio for major-minor axis >>*/*1.3f) * _ahrs.cos_yaw();
-        result.y = _center.y - (_radius/*K-hack : inserted constant ratio for major-minor axis >>*/*0.7f) * _ahrs.sin_yaw();
+
+        //K-hack
+        // add majot/minor ratio
+        result.x = _center.x - ((_radius*1.3f) * _ahrs.cos_yaw());
+        result.y = _center.y - ((_radius*0.7f) * _ahrs.sin_yaw());
         result.z = _center.z;
         return;
     }
