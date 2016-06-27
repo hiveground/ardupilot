@@ -24,6 +24,16 @@ const AP_Param::GroupInfo AC_Circle::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("RATE",    1, AC_Circle, _rate,    AC_CIRCLE_RATE_DEFAULT),
 
+    //K-hack
+    // @Param: DIR_ANGLE
+    // @DisplayName: Direction angle
+    // @Description: Ellipse mode's rotation angle of the ellipse
+    // @Units: deg
+    // @Range: 0 360
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("DIR_ANGLE",    2, AC_Circle, _dir_angle,    AC_CIRCLE_DIR_ANGLE_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -104,6 +114,19 @@ void AC_Circle::set_rate(float deg_per_sec)
     }
 }
 
+//K-hack
+void AC_Circle::change_radius(float temp_name)
+{
+    if(temp_name<=0 && _radius <= 0) {
+        _radius = 0;
+        calc_velocities(false);
+    } else {
+        _radius += temp_name/fabsf(temp_name);
+        calc_velocities(false);
+    }
+
+}
+
 /// update - update circle controller
 void AC_Circle::update()
 {
@@ -135,9 +158,7 @@ void AC_Circle::update()
         _angle_total += angle_change;
 
         //K-hack
-        // rotating angle for flight path
-        // ** need to be made into RC_input + create if/case to prevents dumb path 
-        float dir_angle = (PI/4);
+        float dir_angle = _dir_angle *PI/180.0f;
 
         // if the circle_radius is zero we are doing panorama so no need to update loiter target
         if (!is_zero(_radius)) {

@@ -42,6 +42,12 @@ void Copter::circle_run()
     float target_yaw_rate = 0;
     float target_climb_rate = 0;
 
+    //K-hack
+    float target_orbit_rate = 0;
+    float target_pitch_rate =0;
+
+    circle_nav.set_rate(0);
+
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
         // To-Do: add some initialisation of position controllers
@@ -74,6 +80,25 @@ void Copter::circle_run()
             // clear i term when we're taking off
             set_throttle_takeoff();
         }
+
+        //K-hack
+        target_orbit_rate = (-((float)(channel_roll->control_in))*0.004f);
+         
+        if(!is_zero(target_orbit_rate)) {
+            circle_nav.set_rate(target_orbit_rate);
+
+            //reset heading to center if no yaw applied
+            if(is_zero(target_yaw_rate)) {
+                circle_pilot_yaw_override = false;
+            }
+        }
+        target_pitch_rate = (-((float)(channel_pitch->control_in))*0.001f);
+        if(!is_zero(target_pitch_rate)) {
+            circle_nav.change_radius(target_pitch_rate);
+        }
+
+    } else {
+        circle_nav.set_rate(0);
     }
 
     // run circle controller

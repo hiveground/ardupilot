@@ -13,6 +13,9 @@
 #define AC_CIRCLE_RATE_DEFAULT      20.0f       // turn rate in deg/sec.  Positive to turn clockwise, negative for counter clockwise
 #define AC_CIRCLE_ANGULAR_ACCEL_MIN 2.0f        // angular acceleration should never be less than 2deg/sec
 
+//K-hack
+#define AC_CIRCLE_DIR_ANGLE_DEFAULT 0.0f        // Angle direction in deg. start angle yet to define.******
+
 #define AC_CIRCLE_DEGX100           5729.57795f // constant to convert from radians to centi-degrees
 
 class AC_Circle
@@ -40,6 +43,9 @@ public:
     float get_radius() { return _radius; }
     /// set_radius - sets circle radius in cm
     void set_radius(float radius_cm) { _radius = radius_cm; }
+
+    //K-hack
+    void change_radius(float temp_name);
 
     /// set_circle_rate - set circle rate in degrees per second
     void set_rate(float deg_per_sec);
@@ -90,10 +96,14 @@ private:
     // parameters
     AP_Float    _radius;        // maximum horizontal speed in cm/s during missions
     AP_Float    _rate;          // rotation speed in deg/sec
+    //K-hack
+    AP_Float    _dir_angle;      // flight path's rotation angle
 
     // internal variables
     uint32_t    _last_update;   // time of last update_loiter call
     Vector3f    _center;        // center of circle in cm from home
+    //K-hack
+    Vector3f    _real_center;   //
     float       _yaw;           // yaw heading (normally towards circle center)
     float       _angle;         // current angular position around circle in radians (0=directly north of the center of the circle)
     float       _angle_total;   // total angle travelled in radians
