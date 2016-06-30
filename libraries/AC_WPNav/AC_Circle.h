@@ -14,7 +14,9 @@
 #define AC_CIRCLE_ANGULAR_ACCEL_MIN 2.0f        // angular acceleration should never be less than 2deg/sec
 
 //K-hack
-#define AC_CIRCLE_DIR_ANGLE_DEFAULT 0.0f        // Angle direction in deg. start angle yet to define.******
+#define AC_CIRCLE_DIR_ANGLE_DEFAULT 0.0f        // Angle direction in deg. start angle at 0 degree
+#define AC_CIRCLE_EX_RADIUS_DEFAULT 1000.0f     // radius for ellipse path forming.
+#define AC_CIRCLE_ZO_HEIGHT_DEFAULT 0.0f      //
 
 #define AC_CIRCLE_DEGX100           5729.57795f // constant to convert from radians to centi-degrees
 
@@ -97,13 +99,13 @@ private:
     AP_Float    _radius;        // maximum horizontal speed in cm/s during missions
     AP_Float    _rate;          // rotation speed in deg/sec
     //K-hack
-    AP_Float    _dir_angle;      // flight path's rotation angle
+    AP_Float    _dir_angle;     // flight path's rotation angle
+    AP_Float    _ex_radius;     // extend radius in ellipse path
+    AP_Float    _zone_height;   //Height limit for the low zone
 
     // internal variables
     uint32_t    _last_update;   // time of last update_loiter call
     Vector3f    _center;        // center of circle in cm from home
-    //K-hack
-    Vector3f    _real_center;   //
     float       _yaw;           // yaw heading (normally towards circle center)
     float       _angle;         // current angular position around circle in radians (0=directly north of the center of the circle)
     float       _angle_total;   // total angle travelled in radians

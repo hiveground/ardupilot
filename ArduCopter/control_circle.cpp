@@ -92,7 +92,7 @@ void Copter::circle_run()
                 circle_pilot_yaw_override = false;
             }
         }
-        target_pitch_rate = (-((float)(channel_pitch->control_in))*0.001f);
+        target_pitch_rate = (((float)(channel_pitch->control_in))*0.001f);
         if(!is_zero(target_pitch_rate)) {
             circle_nav.change_radius(target_pitch_rate);
         }

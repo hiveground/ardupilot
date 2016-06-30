@@ -34,6 +34,26 @@ const AP_Param::GroupInfo AC_Circle::var_info[] PROGMEM = {
     // @User: Standard
     AP_GROUPINFO("DIR_ANGLE",    2, AC_Circle, _dir_angle,    AC_CIRCLE_DIR_ANGLE_DEFAULT),
 
+    //K-hack
+    // @Param: EX_RADIUS
+    // @DisplayName: Extend Radius
+    // @Description: Ellipse mode's extending radius from the original circle, minimum value equals to original radius
+    // @Units: cm
+    // @Range: 0 10000
+    // @Increment: 100
+    // @User: Standard
+    AP_GROUPINFO("EX_RADIUS",    3, AC_Circle, _ex_radius,    AC_CIRCLE_EX_RADIUS_DEFAULT),
+
+    //K-hack
+    // @Param: ZO_HEIGHT
+    // @DisplayName: Zone Height
+    // @Description: Height limit the split the low and high zone
+    // @Units: cm
+    // @Range: 0 100000
+    // @Increment: 100
+    // @User: Standard
+    AP_GROUPINFO("ZO_HEIGHT",    4, AC_Circle, _zone_height,    AC_CIRCLE_ZO_HEIGHT_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -64,6 +84,9 @@ AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS& ahrs, AC_PosCont
 void AC_Circle::init(const Vector3f& center)
 {
     _center = center;
+
+    set_rate(0);
+
 
     // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
     _pos_control.init_xy_controller();
@@ -115,13 +138,14 @@ void AC_Circle::set_rate(float deg_per_sec)
 }
 
 //K-hack
-void AC_Circle::change_radius(float temp_name)
+//change radius : increase/decrase at linear rate
+void AC_Circle::change_radius(float change_value)
 {
-    if(temp_name<=0 && _radius <= 0) {
+    if(change_value<=0 && _radius <= 0) {
         _radius = 0;
         calc_velocities(false);
     } else {
-        _radius += temp_name/fabsf(temp_name);
+        _radius += change_value/fabsf(change_value);
         calc_velocities(false);
     }
 
@@ -166,9 +190,15 @@ void AC_Circle::update()
             Vector3f target;
             //K-hack 
             // insert major-minor ratio and parametric formula for path rotation
-            // ** may need to change ratio ++ rotating by PI/2 or 90 degree seems to have the rotation off by a bit.
-            target.x = _center.x + ((_radius*1.3f) * cosf(-_angle)*cosf(dir_angle)) + ((_radius*0.7f)*sinf(-_angle)*sinf(dir_angle)) ;
-            target.y = _center.y - ((_radius*0.7f) * sinf(-_angle)*cosf(dir_angle)) + ((_radius*1.3f)*cosf(-_angle)*sinf(dir_angle)) ;
+
+            const Vector3f &curr_pos = _inav.get_position();
+
+            float ex_radius;
+            if(_ex_radius<_radius || curr_pos.z<_zone_height){ex_radius=_radius;} else {ex_radius = _ex_radius;}
+
+            target.x = _center.x + (((_radius + ex_radius)/2) * cosf(-_angle)*cosf(dir_angle)) + ((_radius)*sinf(-_angle)*sinf(dir_angle)) + ((ex_radius-_radius)/2*cosf(dir_angle));
+            target.y = _center.y - ((_radius) * sinf(-_angle)*cosf(dir_angle)) + (((_radius + ex_radius)/2)*cosf(-_angle)*sinf(dir_angle)) + ((ex_radius-_radius)/2*sinf(dir_angle));
+
             target.z = _pos_control.get_alt_target();
 
             // update position controller target
@@ -177,8 +207,8 @@ void AC_Circle::update()
             // heading is 180 deg from vehicles target position around circle
             //_yaw = wrap_PI(_angle-PI) * AC_CIRCLE_DEGX100;
             
-            //K-hack, center-heading using trigonometric approach.
-            const Vector3f &curr_pos = _inav.get_position();
+            //K-hack
+            //center-heading using trigonometric approach.
             _yaw = (atan2f(curr_pos.y-_center.y,curr_pos.x-_center.x)-PI) * AC_CIRCLE_DEGX100;
  
         }else{
@@ -226,9 +256,18 @@ void AC_Circle::get_closest_point_on_circle(Vector3f &result)
     if (is_zero(dist)) {
 
         //K-hack
-        // add majot/minor ratio
-        result.x = _center.x - ((_radius*1.3f) * _ahrs.cos_yaw());
-        result.y = _center.y - ((_radius*0.7f) * _ahrs.sin_yaw());
+        //
+        float dir_angle = _dir_angle *PI/180.0f;
+
+        float ex_radius;
+        if(_ex_radius<_radius || curr_pos.z<_zone_height){ex_radius=_radius;} else {ex_radius = _ex_radius;}
+
+        //result.x = _center.x - ((_radius) * _ahrs.cos_yaw());
+        result.x = _center.x - (((_radius + ex_radius)/2) * _ahrs.cos_yaw()*cosf(dir_angle)) + ((_radius)*_ahrs.sin_yaw()*sinf(dir_angle)) + ((ex_radius-_radius)/2*cosf(dir_angle));
+
+        //result.y = _center.y - ((_radius) * _ahrs.sin_yaw());
+        result.y = _center.y - ((_radius) * _ahrs.sin_yaw()*cosf(dir_angle)) + (((_radius + ex_radius)/2)*_ahrs.cos_yaw()*sinf(dir_angle)) + ((ex_radius-_radius)/2*sinf(dir_angle));
+
         result.z = _center.z;
         return;
     }
