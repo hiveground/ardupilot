@@ -183,21 +183,24 @@ void AC_Circle::update()
 
         //K-hack
         float dir_angle = _dir_angle *PI/180.0f;
+        float init_angle;
 
         // if the circle_radius is zero we are doing panorama so no need to update loiter target
         if (!is_zero(_radius)) {
             // calculate target position
             Vector3f target;
+            
             //K-hack 
-            // insert major-minor ratio and parametric formula for path rotation
-
+            // insert parametric formula for path rotation + extender radius
             const Vector3f &curr_pos = _inav.get_position();
 
             float ex_radius;
             if(_ex_radius<_radius || curr_pos.z<_zone_height){ex_radius=_radius;} else {ex_radius = _ex_radius;}
 
-            target.x = _center.x + (((_radius + ex_radius)/2) * cosf(-_angle)*cosf(dir_angle)) + ((_radius)*sinf(-_angle)*sinf(dir_angle)) + ((ex_radius-_radius)/2*cosf(dir_angle));
-            target.y = _center.y - ((_radius) * sinf(-_angle)*cosf(dir_angle)) + (((_radius + ex_radius)/2)*cosf(-_angle)*sinf(dir_angle)) + ((ex_radius-_radius)/2*sinf(dir_angle));
+            init_angle = -wrap_PI(_angle - ToRad(_dir_angle));
+
+            target.x = _center.x + (((_radius + ex_radius)/2) * cosf(init_angle)*cosf(dir_angle)) + ((_radius)*sinf(init_angle)*sinf(dir_angle)) + ((ex_radius-_radius)/2*cosf(dir_angle));
+            target.y = _center.y - ((_radius) * sinf(init_angle)*cosf(dir_angle)) + (((_radius + ex_radius)/2)*cosf(init_angle)*sinf(dir_angle)) + ((ex_radius-_radius)/2*sinf(dir_angle));
 
             target.z = _pos_control.get_alt_target();
 
@@ -257,7 +260,7 @@ void AC_Circle::get_closest_point_on_circle(Vector3f &result)
 
         //K-hack
         //
-        float dir_angle = _dir_angle *PI/180.0f;
+        float dir_angle = (_dir_angle *PI/180.0f);
 
         float ex_radius;
         if(_ex_radius<_radius || curr_pos.z<_zone_height){ex_radius=_radius;} else {ex_radius = _ex_radius;}
