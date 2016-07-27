@@ -337,3 +337,10 @@ void AC_Circle::init_start_angle(bool use_heading)
         }
     }
 }
+
+/*void AC_Circle::circ_reposition(float des_angle)
+{
+    float repos_rate = (des_angle-_angle>0) ? 1.0f : -1.0f;
+    set_rate(repos_rate);
+    update();
+}*/

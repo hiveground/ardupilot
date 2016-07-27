@@ -38,6 +38,7 @@ void Copter::rtl_run()
         case RTL_InitialClimb:
             rtl_return_start();
             break;
+
         case RTL_ReturnHome:
             rtl_loiterathome_start();
             break;
@@ -114,11 +115,21 @@ void Copter::rtl_climb_start()
     set_auto_yaw_mode(AUTO_YAW_HOLD);
 }
 
+//////////////////////K-hack
+float exit_angle; // Exit angle in radian
+bool rtl_repos_complete; // bool to determine repositioning state
+Vector3f home; // Home position
+//////////////////////
+
 // rtl_return_start - initialise return to home
 void Copter::rtl_return_start()
 {
     rtl_state = RTL_ReturnHome;
     rtl_state_complete = false;
+
+    ////////K-hack: default repos state back to false 
+    rtl_repos_complete = false;
+    ////////
 
     // set target to above home/rally point
 #if AC_RALLY == ENABLED
@@ -141,9 +152,13 @@ void Copter::rtl_return_start()
 // rtl_climb_return_run - implements the initial climb, return home and descent portions of RTL which all rely on the wp controller
 //      called by rtl_run at 100hz or more
 void Copter::rtl_climb_return_run()
-{
-    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
-    if(!ap.auto_armed || !motors.get_interlock()) {
+{ 
+    ///////////////////////K-hack: insert "if" case to detect circling mode to adjust rtl behavior
+    if(rtl_repos_complete == true || auto_mode != Auto_Circle) {
+    ///////////////////////
+
+        // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
+        if(!ap.auto_armed || !motors.get_interlock()) {
 #if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
         // call attitude controller
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
@@ -152,37 +167,65 @@ void Copter::rtl_climb_return_run()
         // reset attitude control targets
         attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
 #endif
-        // To-Do: re-initialise wpnav targets
-        return;
-    }
-
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
-    if (!failsafe.radio) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
-        if (!is_zero(target_yaw_rate)) {
-            set_auto_yaw_mode(AUTO_YAW_HOLD);
+            // To-Do: re-initialise wpnav targets
+            return;
         }
+
+        // process pilot's yaw input
+        float target_yaw_rate = 0;
+        if (!failsafe.radio) {
+            // get pilot's desired yaw rate
+            target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+            if (!is_zero(target_yaw_rate)) {
+                set_auto_yaw_mode(AUTO_YAW_HOLD);
+            }
+        }
+
+        // run waypoint controller
+        wp_nav.update_wpnav();
+
+        // call z-axis position controller (wpnav should have already updated it's alt target)
+        pos_control.update_z_controller();
+
+        // call attitude controller
+        if (auto_yaw_mode == AUTO_YAW_HOLD) {
+            // roll & pitch from waypoint controller, yaw rate from pilot
+            attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
+        }else{
+            // roll, pitch from waypoint controller, yaw heading from auto_heading()
+            attitude_control.angle_ef_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(),true);
+        }
+
+        // check if we've completed this stage of RTL
+        rtl_state_complete = wp_nav.reached_wp_destination(); 
+    
+    } 
+
+    ////////////////////K-hack: rtl extra cycle after circling flight to adjust targetss position on circle before going home
+    else {
+        
+        home = Vector3f(0,0,get_RTL_alt());
+        float des_angle = pv_get_bearing_cd(circle_nav.get_center(),home);
+        exit_angle = ToRad(des_angle/100);
+        float remain_angle = wrap_PI(exit_angle - circle_nav.get_angle());
+        if(fabsf(remain_angle) < 0.150) {
+            rtl_repos_complete = true;
+            wp_nav.set_wp_destination(home);
+            return;
+        }
+
+        //float orbit_speed = remain_angle*10.0f;
+        float orbit_rate = (remain_angle >=0? 10.0f:-10.0f);
+        orbit_rate = constrain_float(orbit_rate,-20.0f,20.0f);
+        circle_nav.set_rate(orbit_rate);
+        circle_nav.update();
+
+        attitude_control.angle_ef_roll_pitch_yaw(circle_nav.get_roll(),circle_nav.get_pitch(),circle_nav.get_yaw(),true);
+        pos_control.update_z_controller();
+    /////////////////////
+
     }
 
-    // run waypoint controller
-    wp_nav.update_wpnav();
-
-    // call z-axis position controller (wpnav should have already updated it's alt target)
-    pos_control.update_z_controller();
-
-    // call attitude controller
-    if (auto_yaw_mode == AUTO_YAW_HOLD) {
-        // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
-    }else{
-        // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control.angle_ef_roll_pitch_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), get_auto_heading(),true);
-    }
-
-    // check if we've completed this stage of RTL
-    rtl_state_complete = wp_nav.reached_wp_destination();
 }
 
 // rtl_return_start - initialise return to home

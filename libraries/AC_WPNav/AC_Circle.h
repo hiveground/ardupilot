@@ -46,8 +46,16 @@ public:
     /// set_radius - sets circle radius in cm
     void set_radius(float radius_cm) { _radius = radius_cm; }
 
+    ////////////////
     //K-hack
     void change_radius(float temp_name);
+    //K-hack
+    /// return current angular position
+    float get_angle() const { return _angle;}
+    //K-hack
+    void set_exit_dest(const Vector3f& dest) { _exit_dest = dest; }
+    const Vector3f& get_exit_dest() const { return _exit_dest;}
+    ////////////////
 
     /// set_circle_rate - set circle rate in degrees per second
     void set_rate(float deg_per_sec);
@@ -55,6 +63,7 @@ public:
     /// get_angle_total - return total angle in radians that vehicle has circled
     float get_angle_total() const { return _angle_total; }
 
+    
     /// update - update circle controller
     void update();
 
@@ -69,6 +78,8 @@ public:
     //  result's altitude (i.e. z) will be set to the circle_center's altitude
     //  if vehicle is at the center of the circle, the edge directly behind vehicle will be returned
     void get_closest_point_on_circle(Vector3f &result);
+
+    
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -98,11 +109,14 @@ private:
     // parameters
     AP_Float    _radius;        // maximum horizontal speed in cm/s during missions
     AP_Float    _rate;          // rotation speed in deg/sec
+    ////////////////
     //K-hack
     AP_Float    _dir_angle;     // flight path's rotation angle
     AP_Float    _ex_radius;     // extend radius in ellipse path
     AP_Float    _zone_height;   //Height limit for the low zone
-
+    Vector3f    _exit_dest;     //destination after exit circling
+    ////////////////
+    
     // internal variables
     uint32_t    _last_update;   // time of last update_loiter call
     Vector3f    _center;        // center of circle in cm from home
