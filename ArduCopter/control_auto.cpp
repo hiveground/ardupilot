@@ -160,6 +160,9 @@ void Copter::auto_wp_start(const Vector3f& destination)
 
     // initialise wpnav
     wp_nav.set_wp_destination(destination);
+    ////////////K-hack
+    //hal.console->printf("AUTO WP START");
+    ////////////
 
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
@@ -187,6 +190,33 @@ void Copter::auto_wp_run()
         set_throttle_takeoff();
         return;
     }
+
+    //////////////K-hack :: CURRENTLY WORKING HERE!! circle's edge repositioning for WP_nav
+    // static int c=0;
+    // if(c++>200){c=0;hal.console->printf("mode %d\n",auto_mode);}
+    // if(auto_mode==Auto_Circle) {
+    //     //Vector3f dest = circle_nav.get_exit_dest();
+    //     //est_angle = ToRad((pv_get_bearing_cd(circle_nav.get_center(),dest))/100);
+    // }
+    /*if(after_cir == true){
+
+        Vector3f dest = circle_nav.get_exit_dest();
+        dest_angle = ToRad((pv_get_bearing_cd(circle_nav.get_center(),dest))/100);
+        hal.console->printf("angle %f\n",ToRad(circle_nav.get_yaw()));
+        circle_nav.update()
+        if(fabsf(wrap_PI(dest_angle - ToRad(circle_nav.get_yaw()))) < 0.175) {
+            after_cir = false;
+            return;
+        } else{
+            //circle_nav.circ_reposition(dest_angle);
+            float repos_rate = ((dest_angle - ToRad(circle_nav.get_yaw())) > 0) ? 2.0f : -2.0f;
+            circle_nav.set_rate(repos_rate);
+            circle_nav.update();
+            pos_control.update_z_controller();
+        }
+        return;
+    }*/
+    //////////////
 
     // process pilot's yaw input
     float target_yaw_rate = 0;
@@ -412,6 +442,9 @@ void Copter::auto_circle_start()
 {
     auto_mode = Auto_Circle;
 
+    //K-hack
+    //after_cir = true;
+
     // initialise circle controller
     // center was set in do_circle so initialise with current center
     circle_nav.init(circle_nav.get_center());
@@ -421,6 +454,69 @@ void Copter::auto_circle_start()
 //      called by auto_run at 100hz or more
 void Copter::auto_circle_run()
 {
+    
+    float target_yaw_rate = 0;
+    float target_climb_rate = 0;
+
+    float target_orbit_rate = 0;
+    float target_pitch_rate = 0;
+
+    circle_nav.set_rate(0);
+
+    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
+    if(!ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
+        // To-Do: add some initialisation of position controllers
+#if FRAME_CONFIG == HELI_FRAME  // Helicopters always stabilize roll/pitch/yaw
+        // call attitude controller
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw_smooth(0, 0, 0, get_smoothing_gain());
+        attitude_control.set_throttle_out(0,false,g.throttle_filt);
+#else   // multicopters do not stabilize roll/pitch/yaw when disarmed
+        attitude_control.set_throttle_out_unstabilized(0,true,g.throttle_filt);
+#endif
+        pos_control.set_alt_target_to_current_alt();
+        return;
+    }
+
+    // process pilot inputs
+    if (!failsafe.radio) {
+        // get pilot's desired yaw rate
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+        if (!is_zero(target_yaw_rate)) {
+            circle_pilot_yaw_override = true;
+        }
+
+        // get pilot desired climb rate
+        target_climb_rate = get_pilot_desired_climb_rate(channel_throttle->control_in);
+
+        // check for pilot requested take-off
+        if (ap.land_complete && target_climb_rate > 0) {
+            // indicate we are taking off
+            set_land_complete(false);
+            // clear i term when we're taking off
+            set_throttle_takeoff();
+        }
+
+        /////////////////////////////////K-hack
+        target_orbit_rate = (-((float)(channel_roll->control_in))*0.004f);
+         
+        if(!is_zero(target_orbit_rate) && (target_orbit_rate>3 || target_orbit_rate<-3)) {
+            circle_nav.set_rate(target_orbit_rate);
+
+            //reset heading to center if no yaw applied
+            if(is_zero(target_yaw_rate)) {
+                circle_pilot_yaw_override = false;
+            }
+        }
+        target_pitch_rate = (((float)(channel_pitch->control_in))*0.001f);
+        if(!is_zero(target_pitch_rate)) {
+            circle_nav.change_radius(target_pitch_rate);
+        }
+
+    } else {
+        circle_nav.set_rate(0);
+    }
+    //////////////////////////////////////
+
     // call circle controller
     circle_nav.update();
 
@@ -428,7 +524,21 @@ void Copter::auto_circle_run()
     pos_control.update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control.angle_ef_roll_pitch_yaw(circle_nav.get_roll(), circle_nav.get_pitch(), circle_nav.get_yaw(),true);
+     if (circle_pilot_yaw_override) {
+        attitude_control.angle_ef_roll_pitch_rate_ef_yaw(circle_nav.get_roll(), circle_nav.get_pitch(), target_yaw_rate);
+    }else{
+        attitude_control.angle_ef_roll_pitch_yaw(circle_nav.get_roll(), circle_nav.get_pitch(), circle_nav.get_yaw(),true);
+    }
+
+    // run altitude controller
+    if (sonar_enabled && (sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
+        // if sonar is ok, use surface tracking
+        target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
+    }
+    // update altitude target and call position controller
+    pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
+    pos_control.update_z_controller();
+
 }
 
 #if NAV_GUIDED == ENABLED

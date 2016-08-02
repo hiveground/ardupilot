@@ -325,6 +325,10 @@ private:
 
     // Auto
     AutoMode auto_mode;   // controls which auto controller is run
+    ////////////////K-hack
+    bool after_cir;
+    float dest_angle;
+    ////////////////
 
     // Guided
     GuidedMode guided_mode;  // controls which controller is run (pos or vel)
