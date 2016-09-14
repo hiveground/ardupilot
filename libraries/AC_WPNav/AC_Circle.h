@@ -9,14 +9,14 @@
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
 
 // loiter maximum velocities and accelerations
-#define AC_CIRCLE_RADIUS_DEFAULT    1000.0f     // radius of the circle in cm that the vehicle will fly
+#define AC_CIRCLE_RADIUS_DEFAULT    2000.0f     // radius of the circle in cm that the vehicle will fly
 #define AC_CIRCLE_RATE_DEFAULT      20.0f       // turn rate in deg/sec.  Positive to turn clockwise, negative for counter clockwise
 #define AC_CIRCLE_ANGULAR_ACCEL_MIN 2.0f        // angular acceleration should never be less than 2deg/sec
 
 //K-hack
 #define AC_CIRCLE_DIR_ANGLE_DEFAULT 0.0f        // Angle direction in deg. start angle at 0 degree
-#define AC_CIRCLE_EX_RADIUS_DEFAULT 1000.0f     // radius for ellipse path forming.
-#define AC_CIRCLE_ZO_HEIGHT_DEFAULT 500.0f      //
+#define AC_CIRCLE_EX_RADIUS_DEFAULT 3000.0f     // Radius for ellipse path forming.
+#define AC_CIRCLE_ZO_HEIGHT_DEFAULT 2000.0f     // Height for changing between circle and elliptic path
 
 #define AC_CIRCLE_DEGX100           5729.57795f // constant to convert from radians to centi-degrees
 
