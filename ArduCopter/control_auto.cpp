@@ -461,8 +461,6 @@ void Copter::auto_circle_run()
     float target_orbit_rate = 0;
     float target_pitch_rate = 0;
 
-    circle_nav.set_rate(0);
-
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if(!ap.auto_armed || ap.land_complete || !motors.get_interlock()) {
         // To-Do: add some initialisation of position controllers
@@ -480,7 +478,7 @@ void Copter::auto_circle_run()
     // process pilot inputs
     if (!failsafe.radio) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in);
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->control_in*0.05);
         if (!is_zero(target_yaw_rate)) {
             circle_pilot_yaw_override = true;
         }
@@ -497,17 +495,31 @@ void Copter::auto_circle_run()
         }
 
         /////////////////////////////////K-hack
-        target_orbit_rate = (-((float)(channel_roll->control_in))*0.004f);
-         
-        if(!is_zero(target_orbit_rate) && (target_orbit_rate>3 || target_orbit_rate<-3)) {
-            circle_nav.set_rate(target_orbit_rate);
+        //20160929 - Change form 0.004 -> 0.001
+        //         - Added RC6 switch for auto/manual orbit
+        if(read_3pos_switch(g.rc_6.radio_in) >= AUX_SWITCH_MIDDLE)
+        {
+            target_orbit_rate = (-((float)(channel_roll->control_in))*0.001f);
 
-            //reset heading to center if no yaw applied
-            if(is_zero(target_yaw_rate)) {
-                circle_pilot_yaw_override = false;
+            if(!is_zero(target_orbit_rate) && (fabs(target_orbit_rate) > 3)) {
+
+                circle_nav.set_rate(target_orbit_rate);
+
+                //reset heading to center if no yaw applied
+                if(is_zero(target_yaw_rate)) {
+                    circle_pilot_yaw_override = false;
+                }
             }
+            else
+            {
+                circle_nav.set_rate(0);
+            }
+        } else {
+            circle_nav.set_original_rate();
         }
-        target_pitch_rate = (((float)(channel_pitch->control_in))*0.001f);
+
+        //20160929 - Change form 0.001 -> 0.0005
+        target_pitch_rate = (((float)(channel_pitch->control_in))*0.0005f);
         if(!is_zero(target_pitch_rate)) {
             circle_nav.change_radius(target_pitch_rate);
         }

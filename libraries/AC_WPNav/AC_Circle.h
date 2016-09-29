@@ -44,7 +44,11 @@ public:
     /// get_radius - returns radius of circle in cm
     float get_radius() { return _radius; }
     /// set_radius - sets circle radius in cm
-    void set_radius(float radius_cm) { _radius = radius_cm; }
+    void set_radius(float radius_cm)
+    {
+    	_radius = radius_cm;
+    	_original_radius = _radius;
+    }
 
     ////////////////
     //K-hack
@@ -59,6 +63,8 @@ public:
 
     /// set_circle_rate - set circle rate in degrees per second
     void set_rate(float deg_per_sec);
+    //Chang 20160928
+    void set_original_rate();
 
     /// get_angle_total - return total angle in radians that vehicle has circled
     float get_angle_total() const { return _angle_total; }
@@ -107,7 +113,7 @@ private:
     AC_PosControl&              _pos_control;
 
     // parameters
-    AP_Float    _radius;        // maximum horizontal speed in cm/s during missions
+    AP_Float    _radius;        // orbit radius
     AP_Float    _rate;          // rotation speed in deg/sec
     ////////////////
     //K-hack
@@ -115,6 +121,10 @@ private:
     AP_Float    _ex_radius;     // extend radius in ellipse path
     AP_Float    _zone_height;   //Height limit for the low zone
     Vector3f    _exit_dest;     //destination after exit circling
+    ////////////////
+    //Chang
+    AP_Float	_original_radius;	//original orbit radius
+    AP_Float    _original_rate;     //original rotation speed in deg/sec
     ////////////////
     
     // internal variables
