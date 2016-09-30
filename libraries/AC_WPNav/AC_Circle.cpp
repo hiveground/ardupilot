@@ -76,16 +76,17 @@ AC_Circle::AC_Circle(const AP_InertialNav& inav, const AP_AHRS& ahrs,
 
     // init flags
     _flags.panorama = false;
+
+
+    //20160929 - Change
+    //Store original orbit rate from parameter
+    _original_rate = _rate;
 }
 
 /// init - initialise circle controller setting center specifically
 ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
 void AC_Circle::init(const Vector3f& center) {
     _center = center;
-
-    //20160929 - Change
-    //Store original orbit rate from parameter
-    _original_rate = _rate;
 
     // initialise position controller (sets target roll angle, pitch angle and I terms based on vehicle current lean angles)
     _pos_control.init_xy_controller();
