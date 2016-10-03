@@ -196,7 +196,7 @@ void AC_Circle::update() {
             const Vector3f &curr_pos = _inav.get_position();
 
             float ex_radius;
-            if (_ex_radius < _radius || curr_pos.z < _zone_height) {
+            if ((_ex_radius < _radius) || (curr_pos.z < _zone_height)) {
                 ex_radius = _radius;
             } else {
                 ex_radius = _ex_radius;
@@ -205,14 +205,14 @@ void AC_Circle::update() {
             init_angle = -wrap_PI(_angle - ToRad(_dir_angle));
 
             target.x = _center.x
-                    + (((_radius + ex_radius) / 2) * cosf(init_angle)
-                            * cosf(dir_angle))
-                            + ((_radius) * sinf(init_angle) * sinf(dir_angle))
-                            + ((ex_radius - _radius) / 2 * cosf(dir_angle));
-            target.y = _center.y - ((_radius) * sinf(init_angle) * cosf(dir_angle))
-                        + (((_radius + ex_radius) / 2) * cosf(init_angle)
-                                * sinf(dir_angle))
-                                + ((ex_radius - _radius) / 2 * sinf(dir_angle));
+                    + (((_radius + ex_radius) / 2) * cosf(init_angle) * cosf(dir_angle))
+                    + ((_radius) * sinf(init_angle) * sinf(dir_angle))
+                    + ((ex_radius - _radius) / 2 * cosf(dir_angle)); //zero if ex_radius == _radius
+
+            target.y = _center.y
+                    - ((_radius) * sinf(init_angle) * cosf(dir_angle))
+                    + (((_radius + ex_radius) / 2) * cosf(init_angle) * sinf(dir_angle))
+                    + ((ex_radius - _radius) / 2 * sinf(dir_angle)); //zero if ex_radius == _radius
 
             target.z = _pos_control.get_alt_target();
 
@@ -224,8 +224,7 @@ void AC_Circle::update() {
 
             //K-hack
             //center-heading using trigonometric approach.
-            _yaw = (atan2f(curr_pos.y - _center.y, curr_pos.x - _center.x) - PI)
-                        * AC_CIRCLE_DEGX100;
+            _yaw = (atan2f(curr_pos.y - _center.y, curr_pos.x - _center.x) - PI) * AC_CIRCLE_DEGX100;
 
         } else {
             // set target position to center
@@ -288,9 +287,10 @@ void AC_Circle::get_closest_point_on_circle(Vector3f &result) {
                 + ((ex_radius - _radius) / 2 * cosf(dir_angle));
 
         //result.y = _center.y - ((_radius) * _ahrs.sin_yaw());
-        result.y = _center.y - ((_radius) * _ahrs.sin_yaw() * cosf(dir_angle))
-                    + (((_radius + ex_radius) / 2) * _ahrs.cos_yaw() * sinf(dir_angle))
-                    + ((ex_radius - _radius) / 2 * sinf(dir_angle));
+        result.y = _center.y
+                - ((_radius) * _ahrs.sin_yaw() * cosf(dir_angle))
+                + (((_radius + ex_radius) / 2) * _ahrs.cos_yaw() * sinf(dir_angle))
+                + ((ex_radius - _radius) / 2 * sinf(dir_angle));
 
         result.z = _center.z;
         return;

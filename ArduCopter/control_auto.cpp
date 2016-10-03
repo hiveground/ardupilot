@@ -415,6 +415,11 @@ void Copter::auto_rtl_run()
 //  we assume the caller has performed all required GPS_ok checks
 void Copter::auto_circle_movetoedge_start()
 {
+    const Vector3f &curr_pos = inertial_nav.get_position();
+    const Vector3f &circle_center = circle_nav.get_center();
+    float dist_to_center = pythagorous2(circle_center.x - curr_pos.x, circle_center.y - curr_pos.y);
+
+
     // check our distance from edge of circle
     Vector3f circle_edge;
     circle_nav.get_closest_point_on_circle(circle_edge);
@@ -425,11 +430,11 @@ void Copter::auto_circle_movetoedge_start()
     // initialise wpnav to move to edge of circle
     wp_nav.set_wp_destination(circle_edge);
 
-    // if we are outside the circle, point at the edge, otherwise hold yaw
-    const Vector3f &curr_pos = inertial_nav.get_position();
-    const Vector3f &circle_center = circle_nav.get_center();
-    float dist_to_center = pythagorous2(circle_center.x - curr_pos.x, circle_center.y - curr_pos.y);
-    if (dist_to_center > circle_nav.get_radius() && dist_to_center > 500) {
+    if(fabs(dist_to_center - circle_nav.get_radius()) < 50) {
+        // vehicle is close to circle edge so hold yaw to avoid spinning as we move to edge of circle
+        set_auto_yaw_mode(AUTO_YAW_HOLD);
+    } else if (dist_to_center > circle_nav.get_radius() && dist_to_center > 500) {
+        // if we are outside the circle, point at the edge, otherwise hold yaw
         set_auto_yaw_mode(get_default_auto_yaw_mode(false));
     } else {
         // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
@@ -454,6 +459,7 @@ void Copter::auto_circle_start()
 //      called by auto_run at 100hz or more
 void Copter::auto_circle_run()
 {
+    //Use code from control_circle
     
     float target_yaw_rate = 0;
     float target_climb_rate = 0;
@@ -523,9 +529,6 @@ void Copter::auto_circle_run()
         if(!is_zero(target_pitch_rate)) {
             circle_nav.change_radius(target_pitch_rate);
         }
-
-    } else {
-        circle_nav.set_rate(0);
     }
     //////////////////////////////////////
 
@@ -542,14 +545,14 @@ void Copter::auto_circle_run()
         attitude_control.angle_ef_roll_pitch_yaw(circle_nav.get_roll(), circle_nav.get_pitch(), circle_nav.get_yaw(),true);
     }
 
-    // run altitude controller
-    if (sonar_enabled && (sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
-        // if sonar is ok, use surface tracking
-        target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
-    }
-    // update altitude target and call position controller
-    pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
-    pos_control.update_z_controller();
+//    // run altitude controller
+//    if (sonar_enabled && (sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
+//        // if sonar is ok, use surface tracking
+//        target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
+//    }
+//    // update altitude target and call position controller
+//    pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
+//    pos_control.update_z_controller();
 
 }
 

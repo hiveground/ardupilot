@@ -154,7 +154,7 @@ void Copter::rtl_return_start()
 void Copter::rtl_climb_return_run()
 { 
     ///////////////////////K-hack: insert "if" case to detect circling mode to adjust rtl behavior
-    if(rtl_repos_complete == true || auto_mode != Auto_Circle) {
+    if((rtl_repos_complete == true) || (auto_mode != Auto_Circle)) {
     ///////////////////////
 
         // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
@@ -201,7 +201,7 @@ void Copter::rtl_climb_return_run()
     
     } 
 
-    ////////////////////K-hack: rtl extra cycle after circling flight to adjust targetss position on circle before going home
+    ////////////////////K-hack: rtl extra cycle after circling flight to adjust target position on circle before going home
     else {
         
         home = Vector3f(0,0,get_RTL_alt());
