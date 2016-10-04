@@ -268,38 +268,54 @@ void AC_Circle::get_closest_point_on_circle(Vector3f &result) {
 
     // if current location is exactly at the center of the circle return edge directly behind vehicle
     if (is_zero(dist)) {
-
-        //K-hack
-        //
-        float dir_angle = (_dir_angle * PI / 180.0f);
-
-        float ex_radius;
-        if (_ex_radius < _radius || curr_pos.z < _zone_height) {
-            ex_radius = _radius;
-        } else {
-            ex_radius = _ex_radius;
-        }
-
-        //result.x = _center.x - ((_radius) * _ahrs.cos_yaw());
-        result.x = _center.x
-                - (((_radius + ex_radius) / 2) * _ahrs.cos_yaw() * cosf(dir_angle))
-                + ((_radius) * _ahrs.sin_yaw() * sinf(dir_angle))
-                + ((ex_radius - _radius) / 2 * cosf(dir_angle));
-
-        //result.y = _center.y - ((_radius) * _ahrs.sin_yaw());
-        result.y = _center.y
-                - ((_radius) * _ahrs.sin_yaw() * cosf(dir_angle))
-                + (((_radius + ex_radius) / 2) * _ahrs.cos_yaw() * sinf(dir_angle))
-                + ((ex_radius - _radius) / 2 * sinf(dir_angle));
-
+        result.x = _center.x - _radius * _ahrs.cos_yaw();
+        result.y = _center.y - _radius * _ahrs.sin_yaw();
         result.z = _center.z;
         return;
     }
 
-    // calculate closest point on edge of circle
-    result.x = _center.x + vec.x / dist * (_radius);
-    result.y = _center.y + vec.y / dist * (_radius);
+    //K-hack
+    //
+    float dir_angle = (_dir_angle * PI / 180.0f);
+    float init_angle = -atan2f(vec.y, vec.x);
+
+    float ex_radius;
+    if (_ex_radius < _radius || curr_pos.z < _zone_height) {
+        ex_radius = _radius;
+    } else {
+        ex_radius = _ex_radius;
+    }
+
+//    result.x = _center.x
+//            - (((_radius + ex_radius) / 2) * _ahrs.cos_yaw() * cosf(dir_angle))
+//            + ((_radius) * _ahrs.sin_yaw() * sinf(dir_angle))
+//            + ((ex_radius - _radius) / 2 * cosf(dir_angle));
+//
+//    result.y = _center.y
+//            - ((_radius) * _ahrs.sin_yaw() * cosf(dir_angle))
+//            + (((_radius + ex_radius) / 2) * _ahrs.cos_yaw() * sinf(dir_angle))
+//            + ((ex_radius - _radius) / 2 * sinf(dir_angle));
+//
+//    result.z = _center.z;
+
+    result.x = _center.x
+            + (((_radius + ex_radius) / 2) * cosf(init_angle) * cosf(dir_angle))
+            + ((_radius) * sinf(init_angle) * sinf(dir_angle))
+            + ((ex_radius - _radius) / 2 * cosf(dir_angle)); //zero if ex_radius == _radius
+
+    result.y = _center.y
+            - ((_radius) * sinf(init_angle) * cosf(dir_angle))
+            + (((_radius + ex_radius) / 2) * cosf(init_angle) * sinf(dir_angle))
+            + ((ex_radius - _radius) / 2 * sinf(dir_angle)); //zero if ex_radius == _radius
+
     result.z = _center.z;
+
+
+
+    // calculate closest point on edge of circle
+//    result.x = _center.x + vec.x / dist * (_radius);
+//    result.y = _center.y + vec.y / dist * (_radius);
+//    result.z = _center.z;
 }
 
 // calc_velocities - calculate angular velocity max and acceleration based on radius and rate

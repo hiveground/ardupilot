@@ -435,18 +435,19 @@ void Copter::auto_circle_movetoedge_start()
     if(curr_pos.z > circle_nav.get_zone_height())
     {
         //in elliptic orbit
-        set_auto_yaw_mode(AUTO_YAW_HOLD);
+        set_auto_yaw_mode(AUTO_YAW_ROI);
     } else {
         //in circle orbit
         if(fabs(dist_to_center - circle_nav.get_radius()) < 50) {
             // vehicle is close to circle edge so hold yaw to avoid spinning as we move to edge of circle
-            set_auto_yaw_mode(AUTO_YAW_HOLD);
-        } else if (dist_to_center > circle_nav.get_radius() && dist_to_center > 500) {
+            set_auto_yaw_mode(AUTO_YAW_ROI);
+        } else
+        if (dist_to_center > circle_nav.get_radius() && dist_to_center > 500) {
             // if we are outside the circle, point at the edge, otherwise hold yaw
             set_auto_yaw_mode(get_default_auto_yaw_mode(false));
         } else {
             // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
-            set_auto_yaw_mode(AUTO_YAW_HOLD);
+            set_auto_yaw_mode(AUTO_YAW_ROI);
         }
     }
 }
