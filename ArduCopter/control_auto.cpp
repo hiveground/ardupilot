@@ -532,6 +532,7 @@ void Copter::auto_circle_run()
             }
         } else {
             circle_nav.set_original_rate();
+            circle_pilot_yaw_override = false;
         }
 
         //20160929 - Change form 0.001 -> 0.0005
