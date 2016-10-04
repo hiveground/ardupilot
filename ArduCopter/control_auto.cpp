@@ -423,6 +423,8 @@ void Copter::auto_circle_movetoedge_start()
     // check our distance from edge of circle
     Vector3f circle_edge;
     circle_nav.get_closest_point_on_circle(circle_edge);
+    float dist_from_circle_center_to_circle_edge = pythagorous2(circle_edge.x - circle_center.x, circle_edge.y - circle_center.y);
+
 
     // set the state to move to the edge of the circle
     auto_mode = Auto_CircleMoveToEdge;
@@ -430,15 +432,22 @@ void Copter::auto_circle_movetoedge_start()
     // initialise wpnav to move to edge of circle
     wp_nav.set_wp_destination(circle_edge);
 
-    if(fabs(dist_to_center - circle_nav.get_radius()) < 50) {
-        // vehicle is close to circle edge so hold yaw to avoid spinning as we move to edge of circle
+    if(curr_pos.z > circle_nav.get_zone_height())
+    {
+        //in elliptic orbit
         set_auto_yaw_mode(AUTO_YAW_HOLD);
-    } else if (dist_to_center > circle_nav.get_radius() && dist_to_center > 500) {
-        // if we are outside the circle, point at the edge, otherwise hold yaw
-        set_auto_yaw_mode(get_default_auto_yaw_mode(false));
     } else {
-        // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
-        set_auto_yaw_mode(AUTO_YAW_HOLD);
+        //in circle orbit
+        if(fabs(dist_to_center - circle_nav.get_radius()) < 50) {
+            // vehicle is close to circle edge so hold yaw to avoid spinning as we move to edge of circle
+            set_auto_yaw_mode(AUTO_YAW_HOLD);
+        } else if (dist_to_center > circle_nav.get_radius() && dist_to_center > 500) {
+            // if we are outside the circle, point at the edge, otherwise hold yaw
+            set_auto_yaw_mode(get_default_auto_yaw_mode(false));
+        } else {
+            // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
+            set_auto_yaw_mode(AUTO_YAW_HOLD);
+        }
     }
 }
 

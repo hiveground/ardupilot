@@ -59,6 +59,7 @@ public:
     //K-hack
     void set_exit_dest(const Vector3f& dest) { _exit_dest = dest; }
     const Vector3f& get_exit_dest() const { return _exit_dest;}
+    float get_zone_height() const { return _zone_height; }
     ////////////////
 
     /// set_circle_rate - set circle rate in degrees per second
