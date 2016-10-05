@@ -419,12 +419,9 @@ void Copter::auto_circle_movetoedge_start()
     const Vector3f &circle_center = circle_nav.get_center();
     float dist_to_center = pythagorous2(circle_center.x - curr_pos.x, circle_center.y - curr_pos.y);
 
-
     // check our distance from edge of circle
     Vector3f circle_edge;
     circle_nav.get_closest_point_on_circle(circle_edge);
-    float dist_from_circle_center_to_circle_edge = pythagorous2(circle_edge.x - circle_center.x, circle_edge.y - circle_center.y);
-
 
     // set the state to move to the edge of the circle
     auto_mode = Auto_CircleMoveToEdge;
@@ -556,14 +553,14 @@ void Copter::auto_circle_run()
         attitude_control.angle_ef_roll_pitch_yaw(circle_nav.get_roll(), circle_nav.get_pitch(), circle_nav.get_yaw(),true);
     }
 
-//    // run altitude controller
-//    if (sonar_enabled && (sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
-//        // if sonar is ok, use surface tracking
-//        target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
-//    }
-//    // update altitude target and call position controller
-//    pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
-//    pos_control.update_z_controller();
+    // run altitude controller
+    if (sonar_enabled && (sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
+        // if sonar is ok, use surface tracking
+        target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
+    }
+    // update altitude target and call position controller
+    pos_control.set_alt_target_from_climb_rate(target_climb_rate, G_Dt, false);
+    pos_control.update_z_controller();
 
 }
 
