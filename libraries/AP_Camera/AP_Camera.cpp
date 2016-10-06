@@ -49,6 +49,9 @@ const AP_Param::GroupInfo AP_Camera::var_info[] PROGMEM = {
     // @Range: 0 1000
     AP_GROUPINFO("TRIGG_DIST",  4, AP_Camera, _trigg_dist, 0),
 
+    AP_GROUPINFO("SERVO_ON2",    5, AP_Camera, _servo_on_pwm2, AP_CAMERA_SERVO_ON_PWM),
+    AP_GROUPINFO("SERVO_OFF2",   6, AP_Camera, _servo_off_pwm2, AP_CAMERA_SERVO_OFF_PWM),
+
     AP_GROUPEND
 };
 
@@ -58,6 +61,7 @@ void
 AP_Camera::servo_pic()
 {
 	RC_Channel_aux::set_radio(RC_Channel_aux::k_cam_trigger, _servo_on_pwm);
+	RC_Channel_aux::set_radio(RC_Channel_aux::k_egg_drop, _servo_on_pwm2);
 
 	// leave a message that it should be active for this many loops (assumes 50hz loops)
 	_trigger_counter = constrain_int16(_trigger_duration*5,0,255);
@@ -115,6 +119,7 @@ AP_Camera::trigger_pic_cleanup()
         switch (_trigger_type) {
             case AP_CAMERA_TRIGGER_TYPE_SERVO:
                 RC_Channel_aux::set_radio(RC_Channel_aux::k_cam_trigger, _servo_off_pwm);
+                RC_Channel_aux::set_radio(RC_Channel_aux::k_egg_drop, _servo_off_pwm2);
                 break;
             case AP_CAMERA_TRIGGER_TYPE_RELAY:
                 _apm_relay->off(0);

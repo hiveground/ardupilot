@@ -208,7 +208,7 @@ void Copter::rtl_climb_return_run()
         float des_angle = pv_get_bearing_cd(circle_nav.get_center(),home);
         exit_angle = ToRad(des_angle/100);
         float remain_angle = wrap_PI(exit_angle - circle_nav.get_angle());
-        if(fabsf(remain_angle) < 0.150) {
+        if(fabs(remain_angle) < 0.150f) {
             rtl_repos_complete = true;
             wp_nav.set_wp_destination(home);
             return;
