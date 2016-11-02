@@ -195,7 +195,8 @@ void Copter::land_nogps_run()
 float Copter::get_land_descent_speed()
 {
 #if CONFIG_SONAR == ENABLED
-    bool sonar_ok = sonar_enabled && (sonar.status() == RangeFinder::RangeFinder_Good);
+    //bool sonar_ok = sonar_enabled && (sonar.status() == RangeFinder::RangeFinder_Good);
+    bool sonar_ok = false;
 #else
     bool sonar_ok = false;
 #endif

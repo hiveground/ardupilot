@@ -167,10 +167,10 @@ void Copter::loiter_run()
         attitude_control.angle_ef_roll_pitch_rate_ef_yaw(wp_nav.get_roll(), wp_nav.get_pitch(), target_yaw_rate);
 
         // run altitude controller
-        if (sonar_enabled && (sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
-            // if sonar is ok, use surface tracking
-            target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
-        }
+//        if (sonar_enabled && (sonar_alt_health >= SONAR_ALT_HEALTH_MAX)) {
+//            // if sonar is ok, use surface tracking
+//            target_climb_rate = get_surface_tracking_climb_rate(target_climb_rate, pos_control.get_alt_target(), G_Dt);
+//        }
 
         // update altitude target and call position controller
         pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, false);
